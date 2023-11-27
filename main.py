@@ -1,5 +1,13 @@
 import sys
+from pysat.solvers import Glucose4
+from pysat.formula import CNF
 from instance_manager.satplan_instance import SatPlanInstance, SatPlanInstanceMapper
+
+solver = Glucose4()
+formula = CNF()
+sat_plan_instance = SatPlanInstance(sys.argv[1])
+instance_mapper = SatPlanInstanceMapper()
+instance_mapper.add_list_of_literals_to_mapping(sat_plan_instance.get_atoms)
 
 def create_literal_for_level(level, literal):
     pure_atom = literal.replace("~","")
@@ -15,6 +23,44 @@ def create_state_from_true_atoms(true_atoms, all_atoms):
 def create_state_from_literals(literals, all_atoms):
     positive_literals = [literal for literal in literals if literal[0] != "~"]
     return create_state_from_true_atoms(positive_literals, all_atoms)
+
+#Retorna o tanto de ações necessárias para resolver o problema
+def level_counter():
+    actions_list = sat_plan_instance.get_actions()
+    n_level = len(actions_list)
+    
+    return n_level 
+    
+#Estado inicial: Mapeia as pré-condições das ações.
+def get_pre_condition():
+    print(f'Initial State: {sat_plan_instance.get_initial_state()}')
+    
+    y = create_literals_for_level_from_list(0, sat_plan_instance.get_initial_state())
+    print(y)
+    
+    instance_mapper.add_list_of_literals_to_mapping(y)
+    
+    initial_block_state = []
+    for initial_block_state in instance_mapper.get_list_of_literals_from_mapping(y):
+        formula.append({initial_block_state})
+    
+    return initial_block_state
+
+#Estado final: Como os blocos devem estar após as ações.
+def get_post_condition(level):
+    print(f'Final State:{sat_plan_instance.get_final_state()}')
+     
+    z = create_literals_for_level_from_list(level, sat_plan_instance.get_final_state())    
+    print(z)
+    
+    instance_mapper.add_list_of_literals_to_mapping(z)
+    
+    final_block_state = []
+    for final_block_state in instance_mapper.get_list_of_literals_from_mapping(z):
+        formula.append(final_block_state)
+        
+    return final_block_state
+    
 
 if __name__ == '__main__':
     if len(sys.argv) != 2:
@@ -33,5 +79,8 @@ if __name__ == '__main__':
     print(instanceMapper.get_literal_from_mapping_reverse(-8))
     print(create_literals_for_level_from_list(5,a))
     print(create_state_from_literals(['holding_b','on_a_b'],satPlanInstance.get_atoms()))
+
+n_level = level_counter()
+
 
 

@@ -1,0 +1,1 @@
+#Criar regras para remoção de blocos.
