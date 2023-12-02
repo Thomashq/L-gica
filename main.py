@@ -33,10 +33,7 @@ def level_counter():
     
 # Estado inicial: Mapeia as pré-condições das ações.
 def set_pre_condition():
-    #print(f'Initial State: {sat_plan_instance.get_initial_state()}')
-
     y = create_literals_for_level_from_list(0, sat_plan_instance.get_initial_state())
-    #print(y)
 
     instance_mapper.add_list_of_literals_to_mapping(y)
 
@@ -65,52 +62,45 @@ if __name__ == '__main__':
     satPlanInstance = SatPlanInstance(sys.argv[1])
     instanceMapper  = SatPlanInstanceMapper()
     instanceMapper.add_list_of_literals_to_mapping(satPlanInstance.get_atoms())
-    print(instanceMapper.mapping)
+    #print(instanceMapper.mapping)
     a = satPlanInstance.get_state_atoms()
     a = satPlanInstance.get_action_posconditions("pick-up_b")
     b = instanceMapper.get_list_of_literals_from_mapping(a)
-    print(b)
-    print(instanceMapper.get_literal_from_mapping_reverse(-8))
-    print(create_literals_for_level_from_list(5,a))
-    print(create_state_from_literals(['holding_b','on_a_b'],satPlanInstance.get_atoms()))
+    #print(b)
+    #print(instanceMapper.get_literal_from_mapping_reverse(-8))
+    #print(create_literals_for_level_from_list(5,a))
+    #print(create_state_from_literals(['holding_b','on_a_b'],satPlanInstance.get_atoms()))
 
 #Pega a quantidade de ações(TODAS AS AÇÕES, e não ação por ação separadamente) e usa para contar quantos passos tem para chegar ao final do problema
 n_level = level_counter()
 
 #Mapeia as ações de pré condição e pós condição
 for i in range(n_level):
-    a = create_literals_for_level_from_list(1, sat_plan_instance.get_actions())
-    #print(a)
-    
+    formula = CNF()
+
+    a = create_literals_for_level_from_list(i, sat_plan_instance.get_actions())
+
     instance_mapper.add_list_of_literals_to_mapping(a)
     actions_list = instance_mapper.get_list_of_literals_from_mapping(a)
-    
-    #print(actions_list)
-    #Mapeia as pré condições e as pós condições.
+
     for actions in sat_plan_instance.get_actions():
-        b = create_literals_for_level_from_list(1, sat_plan_instance.get_action_preconditions(actions))
-        #print(b)
-        
+        b = create_literals_for_level_from_list(i, sat_plan_instance.get_action_preconditions(actions))
         instance_mapper.add_list_of_literals_to_mapping(b)
-        #print(instance_mapper.get_list_of_literals_from_mapping(b))
-        
+        set_pre_condition()
+            
         c = create_literals_for_level_from_list(i+1, sat_plan_instance.get_action_posconditions(actions))
-        #print(c)
-
         instance_mapper.add_list_of_literals_to_mapping(c)
-        #print(instance_mapper.get_list_of_literals_from_mapping(c))
-        
-set_pre_condition()
-set_post_condition()
+        set_post_condition()
 
-solver.append_formula(formula)
+        solver.append_formula(formula)
+        is_satisfiable = solver.solve()
 
-is_satisfiable = solver.solve()
-#Pega o caminho usado para resolver
-if is_satisfiable:
-    model = solver.get_model()
-    path_string = ' '.join(map(str, model))
-    actions_names = instance_mapper.get_list_of_literals_from_mapping_reverse(model)
-    print(f'Caminho da solução: {actions_names}')
-else:
-    print("Não satisfeito")
+        # Pega o caminho usado para resolver
+    if is_satisfiable:
+        model = solver.get_model()
+        path_string = ' '.join(map(str, model))
+        actions_names = instance_mapper.get_list_of_literals_from_mapping_reverse(model)
+        print(f'Nivel {i} Caminho da solução: {actions_names}\n')
+    else:
+        print(f'Nível {i} Insatisfazível')
+        break
