@@ -29,6 +29,8 @@ def create_state_from_literals(literals, all_atoms):
     return create_state_from_true_atoms(positive_literals, all_atoms)
 
 # Retorna o tanto de ações necessárias para resolver o problema
+
+
 def level_counter():
     actions_list = sat_plan_instance.get_actions()
     n_level = len(actions_list)
@@ -36,16 +38,22 @@ def level_counter():
     return n_level
 
 # Estado inicial: Mapeia as pré-condições das ações.
+
+
 def set_initial_state():
-    y = create_literals_for_level_from_list(0, create_literals_for_level_from_list(
-        sat_plan_instance.get_initial_state(), sat_plan_instance.get_state_atoms()))
+    y = create_literals_for_level_from_list(0, sat_plan_instance.get_initial_state())
 
     instance_mapper.add_list_of_literals_to_mapping(y)
 
     for initial_block_state in instance_mapper.get_list_of_literals_from_mapping(y):
-        solver.add_clause([initial_block_state])  # Corrigido para usar uma lista
+        # Corrigido para usar uma lista
+        solver.add_clause([initial_block_state])
 
+    states = create_literal_for_level(0 ,sat_plan_instance.get_state_atoms())
+    
 # Estado final: Como os blocos devem estar após as ações.
+
+
 def set_final_state():
     level = level_counter()
     # print(f'Final State:{sat_plan_instance.get_final_state()}')
@@ -92,20 +100,22 @@ for i in range(n_level):
 
     for action in sat_plan_instance.get_actions():
         b = create_literals_for_level_from_list(
-        i, sat_plan_instance.get_action_preconditions(action))
+            i, sat_plan_instance.get_action_preconditions(action))
         instance_mapper.add_list_of_literals_to_mapping(b)
-        
+
         action_literal = instance_mapper.get_literal_from_mapping(action)
 
         for pre_condition_literal in b:
-            solver.add_clause([-action_literal, instance_mapper.get_literal_from_mapping(pre_condition_literal)])
+            solver.add_clause(
+                [-action_literal, instance_mapper.get_literal_from_mapping(pre_condition_literal)])
 
         c = create_literals_for_level_from_list(
-        i+1, sat_plan_instance.get_action_posconditions(action))
+            i+1, sat_plan_instance.get_action_posconditions(action))
         instance_mapper.add_list_of_literals_to_mapping(c)
 
         for post_condition_literal in c:
-            solver.add_clause([-action_literal, instance_mapper.get_literal_from_mapping(post_condition_literal)])
+            solver.add_clause(
+                [-action_literal, instance_mapper.get_literal_from_mapping(post_condition_literal)])
 
     unaffected_states = [
         state for state in sat_plan_instance.get_state_atoms() if state not in b]
@@ -115,7 +125,8 @@ for i in range(n_level):
         unaffected_literals)
 
     for unaffected_literal in unaffected_literals_mapped:
-        solver.add_clause([-instance_mapper.get_literal_from_mapping(action), -unaffected_literal])
+        solver.add_clause(
+            [-instance_mapper.get_literal_from_mapping(action), -unaffected_literal])
 
         is_satisfiable = solver.solve()
     # Pega o caminho usado para resolver
@@ -123,8 +134,9 @@ for i in range(n_level):
             model = solver.get_model()
             path_string = ' '.join(map(str, model))
             actions_names = instance_mapper.get_list_of_literals_from_mapping_reverse(
-            model)
-            print(f'Nivel {i} Caminho da solução: {actions_names}\n')
+                model)
+            #print(f'Nivel {i} Caminho da solução: {actions_names}\n')
+            print(f'{model}') 
+            break
         else:
             print(f'Nível {i} Insatisfazível')
-            break
