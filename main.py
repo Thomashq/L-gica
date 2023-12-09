@@ -1,5 +1,7 @@
 import sys
 from pysat.solvers import Glucose4
+import time
+from datetime import timedelta
 from instance_manager.satplan_instance import SatPlanInstance, SatPlanInstanceMapper
 
 def create_literal_for_level(level, literal):
@@ -21,10 +23,12 @@ def create_state_from_literals(literals, all_atoms):
 sat_plan_instance = SatPlanInstance(sys.argv[1])
 level = 1
 
+start_time = time.time()
 #While permanece rodando enquanto for insatisfázivel, se for sat retorna a resolução e encerra
 while(True):
     solver = Glucose4()
     instance_mapper = SatPlanInstanceMapper()
+    
     #Seta o estado inicial do problema
     #Mapeia os literais para enviar ao solver   
     def set_initial_state():
@@ -43,7 +47,7 @@ while(True):
                 solver.add_clause([-state_value])
     
     #Seta o estado final
-    #Mapeia o estado do problema ao final da action               
+    #Mapeia o estado do problema ao final da action
     def set_final_state():
         z = create_literals_for_level_from_list(
             level, sat_plan_instance.get_final_state())
@@ -56,8 +60,8 @@ while(True):
     set_initial_state()
     set_final_state()
     #Estados das ações
-    levels_actions_states = []    
- 
+    levels_actions_states = []
+    
     for i in range(level):
         a = create_literals_for_level_from_list(i, sat_plan_instance.get_actions())
         
@@ -119,11 +123,20 @@ while(True):
                     
                     solver.add_clause(
                     [-level_action_value, current_literal_value, -next_literal_value])                
-
+    
     is_satisfiable = solver.solve()
     # Pega o caminho usado para resolver
     if is_satisfiable:
         print(f'Nível {i+1} é Satisfazível: ')
+        
+        end_time = time.time()
+        elapsed_time = end_time - start_time 
+        minutes, seconds = divmod(elapsed_time, 60)
+        seconds = round(seconds, 2)
+        centiseconds = int((seconds - int(seconds)) * 100)
+        
+        elapsed_time_str = f'{int(minutes)} minutos, {int(seconds)} segundos e {centiseconds} centésimos'
+   
         model = solver.get_model()
         path_string = ' '.join(map(str, model))
         actions_names = instance_mapper.get_list_of_literals_from_mapping_reverse(
@@ -131,6 +144,8 @@ while(True):
         for action_name in actions_names:
             if(action_name in levels_actions_states):
                 print(action_name)
+        
+        print(f'Tempo necessário: {elapsed_time_str}')
         break
     else:
         print(f'Nível {i+1} Insatisfazível: ')
